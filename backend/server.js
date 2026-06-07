@@ -5,16 +5,19 @@ const AuthRouter = require("./router/auth.route")
 const WebsiteRouter = require("./router/websites.route")
 const mongoose = require("mongoose")
 const cookieParser = require('cookie-parser')
-
+const cors = require("cors")
 
 
 const app = express();
 
 app.use(express.json());
-app.use(cookieParser())
-app.use("/api/auth", AuthRouter)
-app.use("/api/websites", WebsiteRouter)
-
+app.use(cookieParser());
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
+app.use("/api/auth", AuthRouter);
+app.use("/api/websites", WebsiteRouter);
 
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => {
