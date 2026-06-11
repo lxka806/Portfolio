@@ -1,78 +1,80 @@
 const Auth = require("../model/Auth")
 
 const register = async (req, res) => {
-    try{
-        const { email, password} = req.body
+    try {
+        const { email, password } = req.body;
+        const normalizedEmail = email?.trim().toLowerCase();
 
-        if(!email || !password.length){
-            return res.status(400).json({ message: "Invalid email or password"})
+        if (!normalizedEmail || !password) {
+            return res.status(400).json({ message: "Invalid email or password" });
         }
 
-    const newUser = await Auth.create({ email, password })
-        return res.status(201).json({ message: "User registered successfully", user: newUser })
+        const existingUser = await Auth.findOne({ email: normalizedEmail });
+        if (existingUser) {
+            return res.status(409).json({ message: "Email is already registered" });
+        }
 
-    }catch(e){
-        return res.status(500).json({ message: e.message})
+        const newUser = await Auth.create({ email: normalizedEmail, password });
+        return res.status(201).json({ message: "User registered successfully", user: { id: newUser._id, email: newUser.email } });
+    } catch (e) {
+        return res.status(500).json({ message: e.message });
     }
 }
 
 const login = async (req, res) => {
     try {
         const { email, password } = req.body;
+        const normalizedEmail = email?.trim().toLowerCase();
 
-        // Check if email and password were provided
-        if (!email || !password) {
+        if (!normalizedEmail || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'Please provide email and password'
+                message: "Please provide email and password",
             });
         }
 
-        // Find user
-        const user = await Auth.findOne({ email });
+        const user = await Auth.findOne({ email: normalizedEmail });
 
         if (!user) {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid email or password'
+                message: "Invalid email or password",
             });
         }
 
-        // Compare password
         const isMatch = await user.comparePassword(password);
 
         if (!isMatch) {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid email or password'
+                message: "Invalid email or password",
             });
         }
 
-        // Generate JWT
         const token = user.signToken();
 
-        // Send token in cookie
-        res.cookie('token', token, {
+        res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+            secure: true,
+            sameSite: "none",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
-            message: 'Login successful',
+            message: "Login successful",
+            token,
             user: {
                 id: user._id,
                 email: user.email,
-                role: user.role
-            }
+                role: user.role,
+            },
         });
-
     } catch (error) {
-        res.status(500).json({
+        console.error("Login Error:", error);
+        return res.status(500).json({
             success: false,
-            message: error.message
+            message: "Server Error",
         });
     }
 };

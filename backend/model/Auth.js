@@ -9,6 +9,8 @@ const authSchema = new mongoose.Schema(
             type: String,
             required: true,
             unique: true,
+            lowercase: true,
+            trim: true,
             validate: [validator.isEmail, 'Please enter a valid email :)']
         },
         password: {

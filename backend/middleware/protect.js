@@ -2,7 +2,12 @@ const jwt = require('jsonwebtoken');
 
 const protect = (req, res, next) => {
     try {
-        const token = req.cookies.token;
+        const cookieToken = req.cookies.token;
+        const authHeader = req.headers.authorization;
+        const bearerToken = authHeader && authHeader.startsWith('Bearer ')
+            ? authHeader.split(' ')[1]
+            : null;
+        const token = cookieToken || bearerToken;
 
         if (!token) {
             return res.status(401).json({
@@ -10,10 +15,7 @@ const protect = (req, res, next) => {
             });
         }
 
-        const decoded = jwt.verify(
-            token,
-            process.env.JWT_SECRET
-        );
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
         req.user = decoded;
 
